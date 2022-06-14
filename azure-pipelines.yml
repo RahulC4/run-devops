@@ -3,7 +3,13 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- main
+    branches:
+      include:
+      - main
+    paths:
+      include:
+      - Shopping/Shopping.Client/*
+      - aks/shoppingclient.yaml
 
 resources:
 - repo: self
@@ -12,20 +18,20 @@ variables:
 
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '1378a34d-ea57-459b-9d6e-5dc6e4506a33'
-  imageRepository: 'shoppingapi'
+  imageRepository: 'shoppingclient'
   containerRegistry: 'k8acrcontainerregistry.azurecr.io'
-  dockerfilePath: 'Shopping/Shopping.API/Dockerfile'
+  dockerfilePath: 'Shopping/Shopping.Client/Dockerfile'
   tag: '$(Build.BuildId)'
   imagePullSecret: 'k8acrcontainerregistry18592f97-auth'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
-
+  
 
 stages:
 - stage: Build
   displayName: Build stage
-  jobs:
+  jobs:  
   - job: Build
     displayName: Build
     pool:
@@ -41,7 +47,7 @@ stages:
         buildContext: $(Build.SourcesDirectory)/Shopping
         tags: |
           $(tag)
-
+          
     - upload: aks
       artifact: aks
 
@@ -65,13 +71,13 @@ stages:
               action: createSecret
               secretName: $(imagePullSecret)
               dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
-
+              
           - task: KubernetesManifest@0
             displayName: Deploy to Kubernetes cluster
             inputs:
               action: deploy
               manifests: |
-                $(Pipeline.Workspace)/aks/shoppingapi.yaml
+                $(Pipeline.Workspace)/aks/shoppingclient.yaml
               imagePullSecrets: |
                 $(imagePullSecret)
               containers: |
